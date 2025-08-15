@@ -4,7 +4,7 @@ import EmailProvider from "next-auth/providers/email"
 import CredentialsProvider from "next-auth/providers/credentials"
 import jwt from "jsonwebtoken"
 
-export default NextAuth({
+export const authOptions = {
   secret: process.env.SECRET,
   providers: [ 
     CredentialsProvider({
@@ -28,7 +28,7 @@ export default NextAuth({
           return null;
         }
       },
-    }),
+    })/*,
     GoogleProvider({
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET,
@@ -38,5 +38,25 @@ export default NextAuth({
       server: process.env.MAIL_SERVER,
       from: "<no-reply@example.com>",
     }),
+    */
   ],
-})
+  session: {
+    strategy: "jwt" // important: use JWT sessions
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        // First login: merge JWT payload
+        return { ...token, ...user };
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Expose JWT data in the session
+      session.user = token;
+      return session;
+    }
+  }
+}
+
+export default NextAuth(authOptions);
