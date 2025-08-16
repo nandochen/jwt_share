@@ -21,6 +21,7 @@ export default async function Home({ searchParams }) {
   let token = null;
   let valid = false;
   let decoded = null;
+  let errorMsg = ''
   if (tokenValue) {
     token = await getToken({ req: { headers: { authorization: `Bearer ${tokenValue}` } }, secret });
     valid = !!token;
@@ -33,16 +34,21 @@ export default async function Home({ searchParams }) {
       }); 
 
     if (decoded) {
-      const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/callback/credentials`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          csrfToken: "", // will be auto-handled if using a form, but for fetch you can skip with custom config
-          token: tokenValue,
-          redirect: "false"
-        }),
-        credentials: "include" // important to get the cookie
-      });
+      try {
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/callback/credentials`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            csrfToken: "", // will be auto-handled if using a form, but for fetch you can skip with custom config
+            token: tokenValue,
+            redirect: "false"
+          }),
+          credentials: "include" // important to get the cookie
+        });
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        errorMsg = `<p>Error: ${error.message}</p>`;
+      }
 
       // Transfer cookies from response to Next.js cookies API
       /*
