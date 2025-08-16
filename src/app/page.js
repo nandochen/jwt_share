@@ -31,6 +31,33 @@ export default async function Home({ searchParams }) {
       }).catch((error) => {
         console.error('Error decoding token:', error);
       }); 
+
+    if (decoded) {
+      const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/callback/credentials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken: "", // will be auto-handled if using a form, but for fetch you can skip with custom config
+          token: tokenValue,
+          redirect: "false"
+        }),
+        credentials: "include" // important to get the cookie
+      });
+
+      // Transfer cookies from response to Next.js cookies API
+      /*
+      const setCookie = res.headers.get("set-cookie");
+      if (setCookie) {
+        const cookieStore = cookies();
+        const parsed = setCookie.split(",").map(c => c.trim());
+        parsed.forEach(cookieStr => {
+          const [nameValue] = cookieStr.split(";");
+          const [name, value] = nameValue.split("=");
+          cookieStore.set(name, value);
+        });
+      }
+      */
+    }
   }
 
   return (
