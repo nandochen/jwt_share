@@ -56,20 +56,6 @@ export default async function Home({ searchParams }) {
         console.error('Error decoding token:', error);
         errorMsg = `<p>Error: ${error.message}</p>`;
       }
-
-      // Transfer cookies from response to Next.js cookies API
-      /*
-      const setCookie = res.headers.get("set-cookie");
-      if (setCookie) {
-        const cookieStore = cookies();
-        const parsed = setCookie.split(",").map(c => c.trim());
-        parsed.forEach(cookieStr => {
-          const [nameValue] = cookieStr.split(";");
-          const [name, value] = nameValue.split("=");
-          cookieStore.set(name, value);
-        });
-      }
-      */
     }
   }
 
