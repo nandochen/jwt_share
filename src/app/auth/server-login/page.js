@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { encode, decode } from "next-auth/jwt";
 import { cookies } from 'next/headers';
+import { authOptions } from "../../api/auth/[...nextauth]";
 
 export default async function ServerCrossDomainAuth({ searchParams }) {
   const params = await searchParams;
@@ -34,29 +35,25 @@ export default async function ServerCrossDomainAuth({ searchParams }) {
       );
     }
     
-    // 創建 next-auth session token for B domain
+    // 創建符合 next-auth 格式的 session token
     const sessionToken = await encode({
       token: {
-        sub: decoded.sub || decoded.id || decoded.userId,
-        name: decoded.name,
+        // next-auth 標準欄位
+        sub: decoded.sub || decoded.id || decoded.userId || decoded.email,
+        name: decoded.name || decoded.username,
         email: decoded.email,
+        picture: decoded.picture || decoded.avatar,
+        
+        // 時間戳
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30), // 30 days
+        
+        // 保留原始 JWT 的所有資料
         ...decoded
       },
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: authOptions.secret || process.env.NEXTAUTH_SECRET,
     });
 
-    const apiBaseUrl = (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')
-      ? 'http://127.0.0.1:3001'
-      : 'https://jwt-share.vercel.app';
-
-    const loginRsp = await fetch(`${apiBaseUrl}/api/auth/login-jwt?token=${encodeURIComponent(token)}`, {
-      method: 'GET'
-    });
-
-    const result = await loginRsp.json();
-    /*
     // 設置 next-auth session cookie for B domain
     const cookieStore = cookies();
     
@@ -64,19 +61,30 @@ export default async function ServerCrossDomainAuth({ searchParams }) {
     const isSecure = process.env.NODE_ENV === 'production' || 
                     process.env.NEXTAUTH_URL?.startsWith('https://');
     
-    // 設置主要的 session cookie
+    // 設置 next-auth 標準的 session cookie
     cookieStore.set('next-auth.session-token', sessionToken, {
       httpOnly: true,
       path: '/',
       secure: isSecure,
-      sameSite: 'lax',
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
+    // 如果是 HTTPS，設置額外的 secure cookie
+    if (isSecure) {
+      cookieStore.set('__Secure-next-auth.session-token', sessionToken, {
+        httpOnly: true,
+        path: '/',
+        secure: true,
+        sameSite: 'none',
+        maxAge: 60 * 60 * 24 * 30
+      });
+    }
+
     console.log('Login successful for user:', decoded);
-    */
+    
     // 成功登入後直接轉向
-    // redirect(redirectTo);
+    redirect(redirectTo);
     
   } catch (error) {
     return (
