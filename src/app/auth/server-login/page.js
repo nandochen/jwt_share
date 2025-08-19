@@ -56,7 +56,6 @@ export default async function ServerCrossDomainAuth({ searchParams }) {
     });
 
     const result = await loginRsp.json();
-
     /*
     // 設置 next-auth session cookie for B domain
     const cookieStore = cookies();

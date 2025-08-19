@@ -34,17 +34,24 @@ export default async function Home({ searchParams }) {
       }); 
 
     if (decoded) {
+      const apiBaseUrl = (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')
+        ? 'http://127.0.0.1:3001'
+        : 'https://jwt-share.vercel.app';
+
       try {
-        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/callback/credentials`, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            csrfToken: "", // will be auto-handled if using a form, but for fetch you can skip with custom config
-            token: tokenValue,
-            redirect: "false"
-          }),
-          credentials: "include" // important to get the cookie
+        const loginRsp = await fetch(`${apiBaseUrl}/api/auth/login-jwt?token=${encodeURIComponent(tokenValue)}`, {
+          method: 'GET'
         });
+
+        const result = await loginRsp.json();
+        console.log(result)
+
+        if (result.success) {
+          // 成功登入後直接轉向
+          // redirect(result.redirectUrl || '/login-status');
+        } else {
+          errorMsg = result.error || 'Login failed';
+        }
       } catch (error) {
         console.error('Error decoding token:', error);
         errorMsg = `<p>Error: ${error.message}</p>`;
