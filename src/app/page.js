@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import { getToken, decode } from "next-auth/jwt";
-import { cookies } from 'next/headers'; 
+import { cookies } from 'next/headers';  
 
 const secret = process.env.NEXTAUTH_SECRET;
 
