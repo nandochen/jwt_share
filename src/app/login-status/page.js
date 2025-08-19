@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 export default function LoginStatus() {	 
 	const { data: session, status } = useSession(); 
 	const [debugInfo, setDebugInfo] = useState('');
+	const [user, setUser] = useState(null);
 
 	useEffect(() => {
 		// Debug: 檢查 cookies
@@ -16,16 +17,13 @@ export default function LoginStatus() {
 		// 嘗試手動獲取 session
 		getSession().then(sessionData => {
 			console.log('Manual getSession result:', sessionData);
+			setUser(sessionData?.user || null);
 		});
 	}, []);
 
 	if (status === "loading") {
 		return <div>載入中...</div>;
 	}
-
-	let tokenSrc = cookies.split('; ').find(row => row.startsWith('next-auth.session-token='));
-	tokenSrc = tokenSrc ? tokenSrc.split('=')[1] : null;
-	let token  = decode({ token: tokenSrc, secret: process.env.NEXTAUTH_SECRET });
 
 	return (
 		<div>
@@ -34,7 +32,7 @@ export default function LoginStatus() {
 			{session ? (
 				<>
 					<p>已登入</p>
-					<pre>{JSON.stringify(session || token, null, 2)}</pre>
+					<pre>{JSON.stringify(user || session, null, 2)}</pre>
 				</>
 			) : (
 				<>
