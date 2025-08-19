@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginWithJWT } from '../../actions/loginWithJWT';
 
-export default function CrossDomainAuth() {
+function CrossDomainAuthContent() {
   const [status, setStatus] = useState('processing');
   const [message, setMessage] = useState('處理中...');
   const router = useRouter();
@@ -105,5 +105,23 @@ export default function CrossDomainAuth() {
         </code>
       </div>
     </div>
+  );
+}
+
+export default function CrossDomainAuth() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div>載入中...</div>
+      </div>
+    }>
+      <CrossDomainAuthContent />
+    </Suspense>
   );
 }
