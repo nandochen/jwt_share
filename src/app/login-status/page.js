@@ -1,5 +1,6 @@
 "use client";
 
+import { decode } from "next-auth/jwt";
 import { useSession, signIn, signOut, getSession } from "next-auth/react"; 
 import { useEffect, useState } from "react";
 
@@ -22,6 +23,10 @@ export default function LoginStatus() {
 		return <div>載入中...</div>;
 	}
 
+	let tokenSrc = cookies.split('; ').find(row => row.startsWith('next-auth.session-token='));
+	tokenSrc = tokenSrc ? tokenSrc.split('=')[1] : null;
+	let token  = decode({ token: tokenSrc, secret: process.env.NEXTAUTH_SECRET });
+
 	return (
 		<div>
 			<h2>用戶登入狀態</h2> 
@@ -29,7 +34,7 @@ export default function LoginStatus() {
 			{session ? (
 				<>
 					<p>已登入</p>
-					<pre>{JSON.stringify(session, null, 2)}</pre>
+					<pre>{JSON.stringify(session || token, null, 2)}</pre>
 				</>
 			) : (
 				<>
@@ -41,7 +46,7 @@ export default function LoginStatus() {
 			<hr />
 			<h3>Debug 資訊</h3>
 			<h4>Cookies:</h4>
-			<pre style={{ fontSize: '12px', background: '#f5f5f5', padding: '10px' }}>
+			<pre style={{ fontSize: '12px', padding: '10px' }}>
 				{debugInfo}
 			</pre>
 		</div>
