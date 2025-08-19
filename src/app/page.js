@@ -84,7 +84,7 @@ export default async function Home({ searchParams }) {
           <div>
             <h3>Decoded Token:</h3>
             <pre>{JSON.stringify(decoded, null, 2)}</pre>
-            <a href="/login-status">Login Status</a>
+            <p><a href="/login-status">Login Status</a></p>
           </div>
         )
       }
