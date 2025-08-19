@@ -22,7 +22,10 @@ function CrossDomainAuthContent() {
       }
 
       try {
-        const result = await loginWithJWT(token);
+        // 使用 GET 方式呼叫 Route Handler
+        const response = await fetch(`/api/auth/login-jwt?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(redirectTo)}`);
+
+        const result = await response.json();
         
         if (result.success) {
           setStatus('success');

@@ -1,11 +1,16 @@
-"use server";
-
-import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from 'next/server';
 import { encode, decode } from "next-auth/jwt";
-import { redirect } from "next/navigation";
 
-export async function loginWithJWT(jwtString) {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const jwtString = searchParams.get('token');
+    const redirectUrl = searchParams.get('redirect') || '/login-status';
+
+    if (!jwtString) {
+      return NextResponse.json({ success: false, error: 'JWT token is required' }, { status: 400 });
+    }
+
     // 使用 next-auth 內建的 decode 功能驗證來自 A domain 的 JWT
     const decoded = await decode({
       token: jwtString,
@@ -13,7 +18,7 @@ export async function loginWithJWT(jwtString) {
     });
 
     if (!decoded) {
-      return { success: false, error: 'Invalid JWT token' };
+      return NextResponse.json({ success: false, error: 'Invalid JWT token' }, { status: 401 });
     }
     
     // 創建 next-auth session token for B domain
@@ -29,47 +34,44 @@ export async function loginWithJWT(jwtString) {
       secret: process.env.NEXTAUTH_SECRET,
     });
 
-    // 設置 next-auth session cookie for B domain
-    const cookieStore = cookies();
-    
     // 檢測當前環境
     const isSecure = process.env.NODE_ENV === 'production' || 
-                    (typeof window !== 'undefined' && window.location.protocol === 'https:') ||
-                    process.env.NEXTAUTH_URL?.startsWith('https://');
+                    request.url.startsWith('https://');
     
+    // 創建 response
+    const response = NextResponse.json({ 
+      success: true, 
+      user: decoded, 
+      sessionToken,
+      redirectUrl 
+    });
+
     // 設置主要的 session cookie
-    cookieStore.set('next-auth.session-token', sessionToken, {
+    response.cookies.set('next-auth.session-token', sessionToken, {
       httpOnly: true,
       path: '/',
       secure: isSecure,
-      sameSite: 'lax', // 同域使用 lax
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
-    // 如果是跨域情況，也設置一個備用的 cookie (non-httpOnly)
-    cookieStore.set('next-auth.session-backup', sessionToken, {
+    // 設置備用 cookie for 跨域
+    response.cookies.set('next-auth.session-backup', sessionToken, {
       httpOnly: false,
       path: '/',
       secure: isSecure,
-      sameSite: 'none', // 跨域使用 none
+      sameSite: 'none',
       maxAge: 60 * 60 * 24 * 30
     });
 
     console.log('Login successful for user:', decoded);
-    return { success: true, user: decoded, sessionToken };
+    return response;
+
   } catch (err) {
     console.error('JWT verification error:', err);
-    return { success: false, error: 'Invalid JWT: ' + err.message };
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Invalid JWT: ' + err.message 
+    }, { status: 400 });
   }
-}
-
-// 新增一個專門處理跨域登入的函數
-export async function crossDomainLogin(jwtString, redirectUrl = '/login-status') {
-  const result = await loginWithJWT(jwtString);
-  
-  if (result.success) {
-    redirect(redirectUrl);
-  }
-  
-  return result;
 }
