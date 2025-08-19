@@ -1,13 +1,13 @@
 "use client";
 
-import { decode } from "next-auth/jwt";
 import { useSession, signIn, signOut, getSession } from "next-auth/react"; 
 import { useEffect, useState } from "react";
 
 export default function LoginStatus() {	 
 	const { data: session, status } = useSession(); 
 	const [debugInfo, setDebugInfo] = useState('');
-	const [user, setUser] = useState(null);
+	const [tokenSrc, setTokenSrc] = useState(''); 
+	const [user, setUser] = useState(null); 
 
 	useEffect(() => {
 		// Debug: 檢查 cookies
@@ -15,11 +15,33 @@ export default function LoginStatus() {
 		setDebugInfo(cookies);
 		
 		// 嘗試手動獲取 session
-		getSession().then(sessionData => {
+		getSession().then(async sessionData => {
 			console.log('Manual getSession result:', sessionData);
-			setUser(sessionData?.user || null);
+			const _tokenSrc = ((sessionData?.cookies).split('next-auth.session-token=')[1]).split(';')[0] || '';
+			setTokenSrc(_tokenSrc || null);
 		});
 	}, []);
+
+	useEffect(() => {
+		// 嘗試解碼 token - 改用 server-side API
+		if (tokenSrc) {
+			fetch(`/api/jwt-to-user?token=${encodeURIComponent(tokenSrc)}`)
+				.then(response => response.json())
+				.then(result => { 
+					if (result.success) { 
+						console.log('Decoded User:', JSON.parse(result.userStr));
+						setUser(JSON.parse(result.userStr));
+					} else {
+						console.error('Error decoding token:', result.error);
+						setUser(null);
+					}
+				})
+				.catch(error => {
+					console.error('Error calling jwt-to-user API:', error);
+					setUser(null);
+				});
+		}
+	}, [tokenSrc]);
 
 	if (status === "loading") {
 		return <div>載入中...</div>;
@@ -32,7 +54,7 @@ export default function LoginStatus() {
 			{session ? (
 				<>
 					<p>已登入</p>
-					<pre>{JSON.stringify(user || session, null, 2)}</pre>
+					<pre>{JSON.stringify(user || session, null, 2)}</pre> 
 				</>
 			) : (
 				<>
