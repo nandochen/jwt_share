@@ -47,7 +47,11 @@ export default async function ServerCrossDomainAuth({ searchParams }) {
       secret: process.env.NEXTAUTH_SECRET,
     });
 
-    const loginRsp = await fetch(`http://127.0.0.1:3001/api/auth/login-jwt?token=${encodeURIComponent(token)}`, {
+    const apiBaseUrl = (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1')
+      ? 'http://127.0.0.1:3001'
+      : 'https://jwt-share.vercel.app';
+
+    const loginRsp = await fetch(`${apiBaseUrl}/api/auth/login-jwt?token=${encodeURIComponent(token)}`, {
       method: 'GET'
     });
 
